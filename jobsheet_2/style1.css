@@ -16,4 +16,20 @@ body {
     background-color: #fff;
     padding: 20px;
     box-sizing: border-box;
+
+    display: flex; 
+    gap: 20px; 
+}
+
+.sidebar-satu {
+    padding: 5px;
+}
+
+.kolom-utama {
+    flex: 2;
+}
+
+.sidebar-satu,
+.sidebar-dua {
+    flex: 1; 
 }
