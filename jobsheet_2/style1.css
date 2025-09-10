@@ -5,7 +5,7 @@ html, body {
 
 body {
     font-family: Arial, Helvetica, sans-serif;
-    background-color: #ddd;
+    background-image: url(field2.jpg);
     line-height: 1.65;
     padding-bottom: 1000px;
 }
@@ -13,7 +13,7 @@ body {
 .container-satu {
     width: 800px;
     margin: 50px auto;
-    background-color: #fff;
+    background-color: #eacdff;
     padding: 20px;
     box-sizing: border-box;
 
@@ -23,6 +23,7 @@ body {
 
 .sidebar-satu {
     padding: 5px;
+    background-color: #b3a9ff;
 }
 
 .kolom-utama {
@@ -32,4 +33,5 @@ body {
 .sidebar-satu,
 .sidebar-dua {
     flex: 1; 
+    background-color: #b3a9ff
 }
