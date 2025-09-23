@@ -36,5 +36,36 @@ echo "Apakah a lebih besar dari b? " . ($hasilLebihBesar ? 'Ya' : 'Tidak') . "<b
 echo "Apakah a lebih kecil atau sama dengan b? " . ($hasilLebihKecilSama ? 'Ya' : 'Tidak') . "<br>";
 echo "Apakah a lebih besar atau sama dengan b? " . ($hasilLebihBesarSama ? 'Ya' : 'Tidak') . "<br>";
 
+$hasilAnd = $a && $b;
+$hasilOr = $a || $b;
+$hasilNotA = !$a;
+$hasilNotB = !$b;
+
+echo "<br>";
+echo "Hasil Operasi Logika: <br>";
+echo "Hasil AND ($a && $b): " . ($hasilAnd ? 'true' : 'false') . "<br>";
+echo "Hasil OR ($a || $b): " . ($hasilOr ? 'true' : 'false') . "<br>";
+echo "Hasil NOT A (!$a): " . ($hasilNotA ? 'true' : 'false') . "<br>";
+echo "Hasil NOT B (!$b): " . ($hasilNotB ? 'true' : 'false') . "<br>";
+
+echo "<br>";
+$a += $b;
+echo "Setelah \$a += \$b, nilai a sekarang: " . $a . "<br>";
+
+$a = 10; 
+$a -= $b;
+echo "Setelah \$a -= \$b, nilai a sekarang: " . $a . "<br>";
+
+$a = 10; 
+$a *= $b;
+echo "Setelah \$a *= \$b, nilai a sekarang: " . $a . "<br>";
+
+$a = 10; 
+$a /= $b;
+echo "Setelah \$a /= \$b, nilai a sekarang: " . $a . "<br>";
+
+$a = 10; 
+$a %= $b;
+echo "Setelah \$a %= \$b, nilai a sekarang: " . $a . "<br>";
 ?>
 
