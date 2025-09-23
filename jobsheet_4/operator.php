@@ -67,5 +67,13 @@ echo "Setelah \$a /= \$b, nilai a sekarang: " . $a . "<br>";
 $a = 10; 
 $a %= $b;
 echo "Setelah \$a %= \$b, nilai a sekarang: " . $a . "<br>";
+
+$hasilIdentik = $a === $b;
+$hasilTidakIdentik = $a !== $b;
+
+echo "<br>";
+echo "Hasil Perbandingan Identitas: <br>";
+echo "Apakah a identik dengan b? " . ($hasilIdentik ? 'Ya' : 'Tidak') . "<br>";
+echo "Apakah a tidak identik dengan b? " . ($hasilTidakIdentik ? 'Ya' : 'Tidak') 
 ?>
 
