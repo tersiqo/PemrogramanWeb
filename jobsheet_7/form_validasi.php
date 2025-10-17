@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Form Input dengan Validasi</title>
+<title>Form Input dengan Validasi AJAX</title>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
@@ -18,12 +18,19 @@
     <input type="submit" value="Submit">
 </form>
 
+<div id="status-ajax" style="margin-top: 20px; color: green; font-weight: bold;"></div>
+
 <script>
 $(document).ready(function() {
     $("#myForm").submit(function(event) {
+        event.preventDefault(); 
+        
+        var form = $(this);
         var nama = $("#nama").val();
         var email = $("#email").val();
         var valid = true;
+
+        $("#status-ajax").text("");
 
         if (nama === "") {
             $("#nama-error").text("Nama harus diisi.");
@@ -39,11 +46,21 @@ $(document).ready(function() {
             $("#email-error").text("");
         }
 
-        if (!valid) {
-            event.preventDefault(); // Menghentikan pengiriman form jika validasi gagal
+        if (valid) {
+            $("#status-ajax").text("Mengirim data...");
+            
+            $.ajax({
+                url: form.attr("action"), 
+                type: form.attr("method"), 
+                data: form.serialize(),
+                success: function(response) {
+                    $("#status-ajax").html("Data Terkirim. Respons Server: " + response);
+                },
+                error: function() {
+                    $("#status-ajax").html("Terjadi kesalahan saat menghubungi server.");
+                }
+            });
         }
-        
-        // Catatan: Validasi format email belum termasuk di sini, hanya cek kosong
     });
 });
 </script>
