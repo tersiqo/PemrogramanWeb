@@ -28,3 +28,4 @@ if($result){
     echo "<script>alert('❌ Gagal menghapus data: " . pg_last_error($conn) . "'); window.location='tampil_mobil.php';</script>";
 }
 ?>
+.

@@ -28,3 +28,4 @@ window.scrollToCategory = id =>
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
 
 
+/
