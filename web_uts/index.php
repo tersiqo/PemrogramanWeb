@@ -2,103 +2,99 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rental Mobil Online</title>
-    <link rel="stylesheet" href="style.css">
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rental Mobil Online</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #f8f9fa;
+    }
+    .hero {
+      background-color: #0d6efd;
+      color: white;
+      text-align: center;
+      padding: 3rem 1rem;
+    }
+    .car-img {
+      height: 180px;
+      object-fit: cover;
+    }
+  </style>
 </head>
-
 <body>
-    <header>
-        <h1>Rental Mobil Terbaik Se-Malang Raya</h1>
-        <p>Sewa mobil impian Anda dengan harga terjangkau!</p>
-    </header>
 
-    <nav>
-        <ul>
-            <li><a href="index.php" class="active-link">Beranda</a></li>
-            <li><a href="katalog.php">Pilihan Armada</a></li> 
-            <li><a href="syarat.html">Syarat & Ketentuan</a></li> 
-            <li><a href="kontak.html">Kontak Kami</a></li>
+  <!-- Header -->
+  <header class="hero">
+    <h1 class="fw-bold">Rental Mobil Terbaik Se-Malang Raya</h1>
+    <p>Sewa mobil impian Anda dengan harga terjangkau!</p>
+  </header>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow">
+    <div class="container">
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item"><a class="nav-link active" href="index.php">Beranda</a></li>
+          <li class="nav-item"><a class="nav-link" href="katalog.php">Pilihan Armada</a></li>
+          <li class="nav-item"><a class="nav-link" href="syarat.php">Syarat & Ketentuan</a></li>
+          <li class="nav-item"><a class="nav-link" href="kontak.php">Kontak Kami</a></li>
+          <li class="nav-item"><a class="nav-link" href="login.php">Ubah Data</a></li>
         </ul>
-    </nav>
+      </div>
+    </div>
+  </nav>
 
-    <main id="home-content">
-        <h2>Armada Unggulan Kami</h2>
-        <p>Nikmati kemudahan sewa harian, mingguan, atau bulanan. Mulai jelajahi koleksi kami dengan mengklik Pilihan Armada di menu, atau 
-        <a href="katalog.php">klik di sini</a>.</p>
+  <!-- Main Content -->
+  <main class="container my-5">
+    <h2 class="text-center mb-4 text-primary fw-semibold">Armada Unggulan Kami</h2>
+    <p class="text-center">Nikmati kemudahan sewa harian, mingguan, atau bulanan. Mulai jelajahi koleksi kami dengan mengklik <a href="katalog.php">Pilihan Armada</a>.</p>
 
-        
+    <div class="row justify-content-center g-4 mt-4">
+      <?php
+      $query = "SELECT * FROM tb_mobil ORDER BY id DESC LIMIT 4";
+      $result = pg_query($conn, $query);
 
-        <div id="car-catalog">
-        <?php
-        // ambil 4 mobil terbaru dari database
-        $query = "SELECT * FROM tb_mobil ORDER BY id DESC LIMIT 4";
-        $result = pg_query($conn, $query);
+      if(pg_num_rows($result) > 0){
+          while($row = pg_fetch_assoc($result)){ ?>
+              <div class="col-md-3">
+                <div class="card shadow-sm h-100">
+                  <img src="img/<?= htmlspecialchars($row['gambar']) ?>" class="card-img-top car-img" alt="<?= htmlspecialchars($row['nama_mobil']) ?>">
+                  <div class="card-body">
+                    <h5 class="card-title"><?= htmlspecialchars($row['nama_mobil']) ?> (<?= htmlspecialchars($row['tahun']) ?>)</h5>
+                    <p class="card-text mb-2">Merk: <?= htmlspecialchars($row['merk']) ?></p>
+                    <p class="fw-bold text-danger">Rp <?= number_format($row['harga'], 0, ',', '.') ?>/hari</p>
+                    <span class="badge <?= $row['status']=='Tersedia' ? 'bg-success' : 'bg-danger' ?>">
+                      <?= htmlspecialchars($row['status']) ?>
+                    </span>
+                  </div>
+                  <div class="card-footer text-center">
+                    <a href="kontak.php" class="btn btn-primary btn-sm">Pesan Sekarang</a>
+                  </div>
+                </div>
+              </div>
+          <?php }
+      } else {
+          echo "<p class='text-center'>Belum ada mobil ditambahkan.</p>";
+      }
+      ?>
+    </div>
 
-        if(pg_num_rows($result) > 0){
-            while($row = pg_fetch_assoc($result)){
-                echo "
-                <a href='kontak.html' class='car-item'>
-                    <img src='img/{$row['gambar']}' alt='{$row['nama_mobil']}'>
-                    <div class='car-details'>
-                        <h2>{$row['nama_mobil']} ({$row['tahun']})</h2>
-                        <p>Merk: {$row['merk']}</p>
-                        <span class='rental-price'>Sewa/Hari: Rp ".number_format($row['harga'],0,',','.')."</span>
-                        <span class='car-status' style='color:" . 
-                            ($row['status']=='Tersedia' ? '#28a745' : '#dc3545') . "'>
-                            Status: {$row['status']}
-                        </span>
-                    </div>
-                </a>
-                ";
-            }
-        } else {
-            echo "<p style='text-align:center;'>Belum ada mobil ditambahkan.</p>";
-        }
-        ?>
-        </div>
-        <div style="margin: 25px 0;">
-            <a href="insert_mobil.php">
-                <button style="
-                    background-color: #28a745;
-                    color: white;
-                    border: none;
-                    padding: 12px 20px;
-                    border-radius: 8px;
-                    font-size: 1rem;
-                    cursor: pointer;
-                    font-weight: bold;
-                    transition: 0.3s;">
-                    + Tambah Mobil Baru
-                </button>
-            </a>
-        </div>
-        <div style="margin: 25px 0;">
-            <a href="tampil_mobil.php">
-                <button style="
-                    background-color: #28a745;
-                    color: white;
-                    border: none;
-                    padding: 12px 20px;
-                    border-radius: 8px;
-                    font-size: 1rem;
-                    cursor: pointer;
-                    font-weight: bold;
-                    transition: 0.3s;">
-                    + Edit data Mobil
-                </button>
-            </a>
-        </div>
-    </main>
-  
+    <div class="text-center mt-5">
+      <a href="insert_mobil.php" class="btn btn-success me-2">+ Tambah Mobil Baru</a>
+      <a href="tampil_mobil.php" class="btn btn-outline-primary">Edit Data Mobil</a>
+    </div>
+  </main>
 
-    <footer>
-        <p>© 2025 Rental Mobil. Semua Hak Dilindungi.</p>
-    </footer>
+  <!-- Footer -->
+  <footer class="bg-dark text-white text-center py-3 mt-5">
+    <p class="mb-0">© 2025 Rental Mobil. Semua Hak Dilindungi.</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

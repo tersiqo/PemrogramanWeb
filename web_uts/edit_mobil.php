@@ -1,116 +1,163 @@
-<?php include 'koneksi.php'; ?>
-
 <?php
-if (!isset($_GET['id'])) {
-    die("ID Mobil tidak ditemukan!");
+require __DIR__ . '/koneksi.php';
+session_start();
+
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    header('Location: login.php');
+    exit; 
 }
 
-$id = $_GET['id'];
-$result = pg_query($conn, "SELECT * FROM tb_mobil WHERE id=$id");
-$data = pg_fetch_assoc($result);
+$err = '';
+$id = (int)($_GET['id'] ?? 0);
+$err = '';
+$id = (int)($_GET['id'] ?? 0);
 
-if (!$data) {
-    die("Data mobil tidak ditemukan!");
+if ($id <= 0) {
+    http_response_code(400);
+    exit('ID mobil tidak valid.');
+}
+
+try {
+    $res = qparams('SELECT id, nama_mobil, merk, tahun, harga, kategori, status, gambar FROM tb_mobil WHERE id=$1', [$id]);
+    $row = pg_fetch_assoc($res);
+    if (!$row) {
+        http_response_code(404);
+        exit('Data mobil tidak ditemukan.');
+    }
+} catch (Throwable $e) {
+    exit('Error: ' . htmlspecialchars($e->getMessage()));
+}
+
+$nama_mobil_old = $nama_mobil = $row['nama_mobil'];
+$merk_old = $merk = $row['merk'];
+$tahun_old = $tahun = $row['tahun'];
+$harga_old = $harga = $row['harga'];
+$kategori_old = $kategori = $row['kategori'];
+$status_old = $status = $row['status'];
+$gambar_lama = $row['gambar']; 
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nama_mobil = trim($_POST['nama_mobil'] ?? '');
+    $merk       = trim($_POST['merk'] ?? '');
+    $tahun      = (int)($_POST['tahun'] ?? 0);
+    $harga      = (int)($_POST['harga'] ?? 0);
+    $kategori   = trim($_POST['kategori'] ?? '');
+    $status     = trim($_POST['status'] ?? '');
+    $gambar_baru = $gambar_lama; 
+
+    if ($nama_mobil === '' || $merk === '' || $tahun <= 0 || $harga <= 0 || $kategori === '') {
+        $err = 'Nama Mobil, Merk, Tahun, Harga, dan Kategori wajib diisi.';
+    } elseif (!in_array($status, ['Tersedia', 'Disewa'])) {
+        $err = 'Status tidak valid.';
+    } else {
+
+        if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] == UPLOAD_ERR_OK && $_FILES['gambar']['size'] > 0) {
+            $fileTmpPath = $_FILES['gambar']['tmp_name'];
+            $fileName = $_FILES['gambar']['name'];
+            $fileSize = $_FILES['gambar']['size'];
+            $fileNameCmps = explode(".", $fileName);
+            $fileExtension = strtolower(end($fileNameCmps));
+            
+            $newFileName = md5(time() . $fileName) . '.' . $fileExtension;
+            $uploadFileDir = __DIR__ . '/img/';
+            $destPath = $uploadFileDir . $newFileName;
+
+            $allowedfileExtensions = ['jpg', 'gif', 'png', 'jpeg'];
+            if (!in_array($fileExtension, $allowedfileExtensions)) {
+                $err = "Ekstensi file tidak didukung. Hanya JPG, JPEG, PNG, GIF yang diperbolehkan.";
+            } elseif ($fileSize > 5000000) { 
+                $err = "Ukuran file terlalu besar (Maks. 5MB).";
+            } elseif (move_uploaded_file($fileTmpPath, $destPath)) {
+                $gambar_baru = $newFileName;
+                if ($gambar_lama !== 'default.jpg' && file_exists($uploadFileDir . $gambar_lama)) {
+                    unlink($uploadFileDir . $gambar_lama);
+                }
+            } else {
+                $err = 'Terjadi kesalahan saat mengupload file.';
+            }
+        }
+
+
+        if ($err === '') {
+            try {
+                qparams(
+                    'UPDATE tb_mobil
+                        SET nama_mobil=$1, merk=$2, tahun=$3, harga=$4, kategori=$5, status=$6, gambar=$7
+                      WHERE id=$8',
+                    [$nama_mobil, $merk, $tahun, $harga, $kategori, $status, $gambar_baru, $id]
+                );
+                header('Location: tampil_mobil.php');
+                exit;
+            } catch (Throwable $e) {
+                $err = $e->getMessage();
+            }
+        }
+    }
 }
 ?>
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Edit Mobil - Rental Mobil</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8">
+  <title>Ubah Mobil</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;max-width:720px;margin:24px auto;padding:0 12px}
+    label{display:block;margin-top:10px}
+    input, select{width:100%;padding:8px;margin-top:4px}
+    .btn{padding:8px 12px;border:1px solid #999;border-radius:6px;background:#f6f6f6;text-decoration:none}
+    .alert{padding:10px;border-radius:6px;margin:10px 0}
+    .alert.error{background:#ffe9e9;border:1px solid #e99}
+    .img-preview { max-width: 150px; height: auto; margin-top: 10px; border: 1px solid #ccc; padding: 5px; border-radius: 5px;}
+  </style>
 </head>
 <body>
-<header>
-  <h1>Edit Data Mobil</h1>
-</header>
+  <h1>Ubah Data Mobil</h1>
 
-<main>
-  <form action="" method="POST" enctype="multipart/form-data" style="max-width:500px;margin:auto;">
-    <input type="hidden" name="id" value="<?php echo $data['id']; ?>">
+  <?php if ($err): ?>
+    <div class="alert error"><?= htmlspecialchars($err) ?></div>
+  <?php endif; ?>
 
-    <label>Nama Mobil</label><br>
-    <input type="text" name="nama_mobil" value="<?php echo $data['nama_mobil']; ?>" required><br><br>
+  <form method="post" enctype="multipart/form-data">
+    <label>Nama Mobil
+      <input name="nama_mobil" value="<?= htmlspecialchars($nama_mobil) ?>" required>
+    </label>
+    <label>Merk
+      <input name="merk" value="<?= htmlspecialchars($merk) ?>" required>
+    </label>
+    <label>Tahun
+      <input name="tahun" type="number" value="<?= htmlspecialchars($tahun) ?>" required>
+    </label>
+    <label>Harga Sewa/Hari
+      <input name="harga" type="number" value="<?= htmlspecialchars($harga) ?>" required>
+    </label>
+    <label>Kategori
+      <select name="kategori" required>
+        <?php
+        $kategori_list = ["lcgc", "mpv", "suv", "pickup"];
+        foreach ($kategori_list as $key) {
+            $selected = ($kategori == $key) ? 'selected' : '';
+            echo "<option value='{$key}' {$selected}>" . strtoupper($key) . "</option>";
+        }
+        ?>
+      </select>
+    </label>
+    <label>Status
+      <select name="status" required>
+        <option value="Tersedia" <?= ($status == 'Tersedia' ? 'selected' : '') ?>>Tersedia</option>
+        <option value="Disewa" <?= ($status == 'Disewa' ? 'selected' : '') ?>>Disewa</option>
+      </select>
+    </label>
 
-    <label>Merk</label><br>
-    <input type="text" name="merk" value="<?php echo $data['merk']; ?>" required><br><br>
+    <label>Gambar Mobil Saat Ini</label>
+    <img src="img/<?= htmlspecialchars($gambar_lama) ?>" alt="Gambar <?= htmlspecialchars($nama_mobil) ?>" class="img-preview">
+    
+    <label style="margin-top:10px;">Ganti Gambar (Kosongkan jika tidak diubah)</label>
+    <input type="file" name="gambar" accept=".jpg, .jpeg, .png, .gif">
 
-    <label>Tahun</label><br>
-    <input type="number" name="tahun" value="<?php echo $data['tahun']; ?>" required><br><br>
-
-    <label>Harga Sewa (per hari)</label><br>
-    <input type="number" name="harga" value="<?php echo $data['harga']; ?>" required><br><br>
-
-    <label>Status</label><br>
-    <select name="status">
-        <option value="Tersedia" <?php if($data['status']=='Tersedia') echo 'selected'; ?>>Tersedia</option>
-        <option value="Sedang Disewa" <?php if($data['status']=='Sedang Disewa') echo 'selected'; ?>>Sedang Disewa</option>
-    </select><br><br>
-
-    <label>Kategori</label><br>
-    <select name="kategori">
-        <option value="lcgc" <?php if($data['kategori']=='lcgc') echo 'selected'; ?>>LCGC</option>
-        <option value="mpv" <?php if($data['kategori']=='mpv') echo 'selected'; ?>>MPV</option>
-        <option value="suv" <?php if($data['kategori']=='suv') echo 'selected'; ?>>SUV</option>
-        <option value="pickup" <?php if($data['kategori']=='pickup') echo 'selected'; ?>>Niaga</option>
-    </select><br><br>
-
-    <label>Gambar Saat Ini</label><br>
-    <img src="img/<?php echo $data['gambar']; ?>" width="120"><br><br>
-
-    <label>Ganti Gambar (Opsional)</label><br>
-    <input type="file" name="gambar" accept="image/*"><br><br>
-
-    <button type="submit" name="update" style="background-color:#007bff;color:white;border:none;padding:10px 18px;border-radius:8px;">Simpan Perubahan</button>
+    <p style="margin-top:16px">
+      <button class="btn" type="submit">Simpan Perubahan</button>
+      <a class="btn" href="tampil_mobil.php">Batal</a>
+    </p>
   </form>
-
-  <?php
-  if(isset($_POST['update'])){
-      $id = $_POST['id'];
-      $nama = $_POST['nama_mobil'];
-      $merk = $_POST['merk'];
-      $tahun = $_POST['tahun'];
-      $harga = $_POST['harga'];
-      $status = $_POST['status'];
-      $kategori = $_POST['kategori'];
-
-      // Jika user upload gambar baru
-      if($_FILES["gambar"]["name"] != ""){
-          $target_dir = "img/";
-          $file_name = basename($_FILES["gambar"]["name"]);
-          $target_file = $target_dir . $file_name;
-
-          move_uploaded_file($_FILES["gambar"]["tmp_name"], $target_file);
-
-          $query = "UPDATE tb_mobil SET 
-                      nama_mobil='$nama', merk='$merk', tahun='$tahun',
-                      harga='$harga', status='$status', kategori='$kategori', gambar='$file_name'
-                    WHERE id=$id";
-      } else {
-          $query = "UPDATE tb_mobil SET 
-                      nama_mobil='$nama', merk='$merk', tahun='$tahun',
-                      harga='$harga', status='$status', kategori='$kategori'
-                    WHERE id=$id";
-      }
-
-      $result = pg_query($conn, $query);
-
-      if($result){
-          echo "<p style='color:green;text-align:center;'>✅ Data mobil berhasil diperbarui!</p>";
-      } else {
-          echo "<p style='color:red;text-align:center;'>❌ Gagal update data: " . pg_last_error($conn) . "</p>";
-      }
-  }
-  ?>
-
-  <div style="text-align:center;margin-top:30px;">
-    <a href="tampil_mobil.php">
-      <button style="background-color:#28a745;color:white;border:none;padding:10px 20px;border-radius:8px;">⬅ Kembali ke Daftar Mobil</button>
-    </a>
-  </div>
-</main>
-
 </body>
 </html>

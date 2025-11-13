@@ -1,126 +1,130 @@
-<?php include 'koneksi.php'; ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tambah Mobil - Rental Mobil</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <header>
-    <h1>Tambah Data Mobil ke Database</h1>
-  </header>
+<?php
+require __DIR__ . '/koneksi.php';
+session_start();
 
-  <main>
-    <form action="" method="POST" enctype="multipart/form-data" style="max-width:500px;margin:auto;">
-      <label>Nama Mobil</label><br>
-      <input type="text" name="nama_mobil" required><br><br>
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    header('Location: login.php');
+    exit;
+}
+$err = '';
+$nama_mobil = $merk = $tahun = $harga = $kategori = $status = $gambar = '';
 
-      <label>Merk</label><br>
-      <input type="text" name="merk" required><br><br>
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nama_mobil = trim($_POST['nama_mobil'] ?? '');
+    $merk       = trim($_POST['merk'] ?? '');
+    $tahun      = (int)($_POST['tahun'] ?? 0);
+    $harga      = (int)($_POST['harga'] ?? 0);
+    $kategori   = trim($_POST['kategori'] ?? '');
+    $status     = trim($_POST['status'] ?? '');
+    $gambar     = ''; 
 
-      <label>Tahun</label><br>
-      <input type="number" name="tahun" required><br><br>
+    if ($nama_mobil === '' || $merk === '' || $tahun <= 0 || $harga <= 0 || $kategori === '') {
+        $err = 'Nama Mobil, Merk, Tahun, Harga, dan Kategori wajib diisi.';
+    } elseif (!in_array($kategori, ["lcgc", "mpv", "suv", "pickup"])) {
+        $err = 'Kategori tidak valid.';
+    } elseif (!in_array($status, ['Tersedia', 'Disewa'])) {
+        $err = 'Status tidak valid.';
+    } else {
 
-      <label>Harga Sewa (per hari)</label><br>
-      <input type="number" name="harga" required><br><br>
+        if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] == UPLOAD_ERR_OK) {
+            $fileTmpPath = $_FILES['gambar']['tmp_name'];
+            $fileName = $_FILES['gambar']['name'];
+            $fileSize = $_FILES['gambar']['size'];
+            $fileType = $_FILES['gambar']['type'];
+            $fileNameCmps = explode(".", $fileName);
+            $fileExtension = strtolower(end($fileNameCmps));
+            
+            $newFileName = md5(time() . $fileName) . '.' . $fileExtension;
+            
+            $uploadFileDir = __DIR__ . '/img/';
+            $destPath = $uploadFileDir . $newFileName;
 
-      <label>Status</label><br>
-      <select name="status">
-        <option value="Tersedia">Tersedia</option>
-        <option value="Sedang Disewa">Sedang Disewa</option>
-      </select><br><br>
-
-      <label>Kategori</label><br>
-      <select name="kategori">
-        <option value="lcgc">LCGC</option>
-        <option value="mpv">MPV</option>
-        <option value="suv">SUV</option>
-        <option value="pickup">Niaga</option>
-      </select><br><br>
-
-      <label>Upload Gambar Mobil</label><br>
-      <input type="file" name="gambar" accept="image/*" required><br><br>
-
-      <button type="submit" name="simpan" style="
-          background-color:#007bff;
-          color:white;
-          border:none;
-          padding:10px 18px;
-          border-radius:8px;
-          cursor:pointer;
-          font-size:1rem;
-      ">Simpan Mobil</button>
-    </form>
-
-    <?php
-    if(isset($_POST['simpan'])){
-        $nama = $_POST['nama_mobil'];
-        $merk = $_POST['merk'];
-        $tahun = $_POST['tahun'];
-        $harga = $_POST['harga'];
-        $status = $_POST['status'];
-        $kategori = $_POST['kategori'];
-
-        // folder penyimpanan gambar
-        $target_dir = "img/";
-        $file_name = basename($_FILES["gambar"]["name"]);
-        $target_file = $target_dir . $file_name;
-        $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-
-        // cek validasi file
-        $check = getimagesize($_FILES["gambar"]["tmp_name"]);
-        if($check === false){
-            echo "<p style='color:red;text-align:center;'>❌ File bukan gambar valid.</p>";
-            exit;
-        }
-
-        // maksimal 2MB
-        if($_FILES["gambar"]["size"] > 2000000){
-            echo "<p style='color:red;text-align:center;'>❌ Ukuran gambar maksimal 2MB.</p>";
-            exit;
-        }
-
-        // format yang diizinkan
-        $allowed = ['jpg','jpeg','png','gif'];
-        if(!in_array($imageFileType, $allowed)){
-            echo "<p style='color:red;text-align:center;'>❌ Hanya format JPG, JPEG, PNG, dan GIF yang diperbolehkan.</p>";
-            exit;
-        }
-
-        // upload ke folder img/
-        if(move_uploaded_file($_FILES["gambar"]["tmp_name"], $target_file)){
-            // simpan data ke database
-            $query = "INSERT INTO tb_mobil (nama_mobil, merk, tahun, harga, status, kategori, gambar)
-                      VALUES ('$nama', '$merk', '$tahun', '$harga', '$status', '$kategori', '$file_name')";
-            $result = pg_query($conn, $query);
-
-            if($result){
-                echo "<p style='color:green;text-align:center;'>✅ Data mobil dan gambar berhasil disimpan!</p>";
+            $allowedfileExtensions = ['jpg', 'gif', 'png', 'jpeg'];
+            if (!in_array($fileExtension, $allowedfileExtensions)) {
+                $err = "Ekstensi file tidak didukung. Hanya JPG, JPEG, PNG, GIF yang diperbolehkan.";
+            } elseif ($fileSize > 5000000) { // Batas 5MB
+                $err = "Ukuran file terlalu besar (Maks. 5MB).";
+            } elseif (move_uploaded_file($fileTmpPath, $destPath)) {
+                $gambar = $newFileName;
             } else {
-                echo "<p style='color:red;text-align:center;'>❌ Gagal menyimpan ke database: " . pg_last_error($conn) . "</p>";
+                $err = 'Terjadi kesalahan saat mengupload file.';
             }
         } else {
-            echo "<p style='color:red;text-align:center;'>❌ Upload gambar gagal.</p>";
+             $gambar = 'default.jpg';
+        }
+
+        if ($err === '') {
+            try {
+                qparams(
+                    'INSERT INTO tb_mobil (nama_mobil, merk, tahun, harga, kategori, status, gambar) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+                    [$nama_mobil, $merk, $tahun, $harga, $kategori, $status, $gambar]
+                );
+                header('Location: tampil_mobil.php');
+                exit;
+            } catch (Throwable $e) {
+                $err = $e->getMessage();
+            }
         }
     }
-    ?>
+}
+?>
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>Tambah Mobil</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;max-width:720px;margin:24px auto;padding:0 12px}
+    label{display:block;margin-top:10px}
+    input,select{width:100%;padding:8px;margin-top:4px}
+    .btn{padding:8px 12px;border:1px solid #999;border-radius:6px;background:#f6f6f6;text-decoration:none}
+    .alert{padding:10px;border-radius:6px;margin:10px 0}
+    .alert.error{background:#ffe9e9;border:1px solid #e99}
+  </style>
+</head>
+<body>
+  <h1>Tambah Mobil Baru</h1>
 
-    <!-- Tombol Kembali ke Beranda -->
-    <div style="text-align:center; margin-top:40px;">
-      <a href="index.php">
-        <button style="
-            background-color:#28a745;
-            color:white;
-            border:none;
-            padding:10px 20px;
-            border-radius:8px;
-            cursor:pointer;
-            font-size:1rem;
-        ">⬅ Kembali ke Beranda</button>
-      </a>
-    </div>
-  </main>
+  <?php if ($err): ?>
+    <div class="alert error"><?= htmlspecialchars($err) ?></div>
+  <?php endif; ?>
+
+  <form method="post" enctype="multipart/form-data">
+    <label>Nama Mobil
+      <input name="nama_mobil" value="<?= htmlspecialchars($nama_mobil) ?>" required>
+    </label>
+    <label>Merk
+      <input name="merk" value="<?= htmlspecialchars($merk) ?>" required>
+    </label>
+    <label>Tahun
+      <input name="tahun" type="number" value="<?= htmlspecialchars($tahun) ?>" required>
+    </label>
+    <label>Harga Sewa/Hari
+      <input name="harga" type="number" value="<?= htmlspecialchars($harga) ?>" required>
+    </label>
+    <label>Kategori
+      <select name="kategori" required>
+        <option value="">Pilih Kategori</option>
+        <option value="lcgc" <?= ($kategori == 'lcgc' ? 'selected' : '') ?>>LCGC</option>
+        <option value="mpv" <?= ($kategori == 'mpv' ? 'selected' : '') ?>>MPV</option>
+        <option value="suv" <?= ($kategori == 'suv' ? 'selected' : '') ?>>SUV</option>
+        <option value="pickup" <?= ($kategori == 'pickup' ? 'selected' : '') ?>>Niaga/Pickup</option>
+      </select>
+    </label>
+    <label>Status
+      <select name="status" required>
+        <option value="Tersedia" <?= ($status == 'Tersedia' ? 'selected' : '') ?>>Tersedia</option>
+        <option value="Disewa" <?= ($status == 'Disewa' ? 'selected' : '') ?>>Disewa</option>
+      </select>
+    </label>
+    <label>Gambar Mobil (JPG/PNG maks 5MB)
+      <input type="file" name="gambar" accept=".jpg, .jpeg, .png, .gif">
+    </label>
+
+    <p style="margin-top:16px">
+      <button class="btn" type="submit">Simpan</button>
+      <a class="btn" href="tampil_mobil.php">Kembali</a>
+    </p>
+  </form>
 </body>
 </html>
